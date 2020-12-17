@@ -38,37 +38,45 @@ def solution(dimensions, your_position, guard_position, distance):
 
     solution_count = 1
 
-    if (not your_x == guard_x):
+    max_x_d = your_x + distance
+    max_y_d = your_y + distance
+    max_y_reflections = math.ceil(max_x_d / room_max_x)
+    max_x_reflections = math.ceil(max_y_d / room_max_y)
+
+    if (your_x != guard_x):
         solution_count += reflect_on_horizontal_walls(your_x, your_y, guard_x, guard_y, room_max_y, distance)
-    if (not your_y == guard_y):
+    if (your_y != guard_y):
         solution_count += reflect_on_vertical_walls(your_x, your_y, guard_x, guard_y, room_max_x, distance)
 
-    # now get the "third" location projection
-    a = reflect_on_room_wall(guard_x, room_max_x) - your_x
-    b = reflect_on_room_wall(guard_y, room_max_y) - your_y
-    c = hypotenous(a, b)
-    if (c <= distance):
+    # The 4 image locations of the guard reflected on each wall:
+    I1 = [guard_x, reflect_on_room_wall(guard_y, room_max_y)]
+    I2 = [reflect_on_room_wall(guard_x, room_max_x), guard_y]
+    I3 = [guard_x, reflect_on_x_axis(guard_y)]
+    I4 = [reflect_on_y_axis(guard_x), guard_y]
+
+    I12 = [I2[0], I1[1]]
+    I23 = [I2[0], I3[1]]
+    I34 = [I4[0], I3[1]]
+    I41 = [I4[0], I1[1]]
+
+    a12 = I12[0] - your_x
+    b12 = I12[1] - your_y
+    if (hypotenous(a12, b12) <= distance):
         solution_count += 1
 
-    b = reflect_on_x_axis(guard_y)
-    c = hypotenous(a, b)
-    if (c <= distance):
+    a23 = I23[0] - your_x
+    b23 = abs(I23[1]) + your_y
+    if (hypotenous(a23, b23) <= distance):
         solution_count += 1
 
-    # next side
-    px = reflect_on_y_axis(guard_x)
-    if (guard_x < your_x):
-        a = px + your_x
-    else:
-        a = px + guard_x
-    b = reflect_on_room_wall(guard_y, room_max_y) - your_y
-    c = hypotenous(a, b)
-    if (c <= distance):
+    a34 = abs(I34[0]) + your_x
+    b34 = abs(I34[1]) + your_y
+    if (hypotenous(a34, b34) <= distance):
         solution_count += 1
 
-    b = reflect_on_x_axis(guard_y)
-    c = hypotenous(a, b)
-    if (c <= distance):
+    a41 = abs(I41[0]) + your_x
+    b41 = I41[1] - your_y
+    if (hypotenous(a41, b41) <= distance):
         solution_count += 1
 
     return solution_count
@@ -79,18 +87,20 @@ def reflect_on_horizontal_walls(your_x, your_y, guard_x, guard_y, room_height, d
     # reflect point on horizontal walls until the hypotenus is greater than the max distance laser can travel
     pi = guard_y
     pj = guard_y
+    p1y = 0
+    p2y = 0
 
     while(True):
         p1y = reflect_on_x_axis(pi)
-        a1 = bottom_leg(your_x, guard_x, p1y)
+        a1 = bottom_leg(your_y, guard_y, p1y)
         # gives us the total distance the beam would travel
         c1 = hypotenous(a1, b)
         if (c1 < d):
             solution_count += 1
 
         p2y = reflect_on_room_wall(pj, room_height)
-        a2 = bottom_leg(your_x, guard_x, p2y)
-        c2 = hypotenous(a1, b)
+        a2 = bottom_leg(your_y, guard_y, p2y)
+        c2 = hypotenous(a2, b)
         if (c2 < d):
             solution_count += 1
         else:
@@ -158,9 +168,12 @@ def reflect_on_room_wall(value, l):
 
     return distance_from_wall + l
 
+def distance_between_points(p, q):
+    return math.sqrt((p[0] - q[0])**2 + (p[1] - q[1])**2)
 
 def hypotenous(a, b):
     return math.sqrt(a**2 + b**2)
 
-print(solution([3,2], [1,1], [2,1], 4))
+# print(solution([13, 6], [5, 2], [9, 0], 500))
+# print(solution([3,2], [1,1], [2,1], 4))
 print(solution([300,275], [150,150], [185,100], 500))
