@@ -43,15 +43,11 @@ def solution(dimensions, your_position, guard_position, distance):
         for j in guard_side_points:
             the_guard_points.append([j, i])
 
-    your_points_reflected_on_x_axis = [[x, -y] for (x, y) in the_points]
-    the_points += your_points_reflected_on_x_axis
-    your_points_refleced_on_y_axis = [[-x, y] for (x, y) in the_points]
-    the_points += your_points_refleced_on_y_axis
+    the_points += reflect_on_x_axis(the_points)
+    the_points += reflect_on_y_axis(the_points)
 
-    guard_points_reflected_on_x_axis = [[x, -y] for (x, y) in the_guard_points]
-    the_guard_points += guard_points_reflected_on_x_axis
-    guard_points_reflected_on_y_axis = [[-x, y] for (x, y) in the_guard_points]
-    the_guard_points += guard_points_reflected_on_y_axis
+    the_guard_points += reflect_on_x_axis(the_guard_points)
+    the_guard_points += reflect_on_y_axis(the_guard_points)
 
     solution = set()
     angles = {}
@@ -91,6 +87,12 @@ def mirror_on_top_wall(room_height, y, distance):
         points.append(points[-1] + steps[i % 2])
 
     return points
+
+def reflect_on_x_axis(points):
+    return [[x, -y] for (x, y) in points]
+
+def reflect_on_y_axis(points):
+    return [[-x, y] for (x, y) in points]
 
 
 print(solution([3,2], [1,1], [2,1], 4))
