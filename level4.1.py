@@ -23,157 +23,76 @@ For example, if you and the elite guard were positioned in a room with dimension
 left wall and then the bottom wall before hitting the elite guard with a total shot distance of sqrt(13), and the shot at bearing [1, 2] bounces off just the top
 wall before hitting the elite guard with a total shot distance of sqrt(5).
 """
-
 import math
 
 def solution(dimensions, your_position, guard_position, distance):
-    your_x = your_position[0]
-    your_y = your_position[1]
+    # first get all of your positions within the specified distance
+    your_side_points = mirror_on_side_wall(dimensions[0], your_position[0], distance)
+    your_top_points = mirror_on_top_wall(dimensions[1], your_position[1], distance)
 
-    guard_x = guard_position[0]
-    guard_y = guard_position[1]
+    the_points = []
+    for i in your_top_points:
+        for j in your_side_points:
+            the_points.append([j, i])
 
-    room_max_x = dimensions[0]
-    room_max_y = dimensions[1]
+    guard_side_points = mirror_on_side_wall(dimensions[0], guard_position[0], distance)
+    guard_top_points = mirror_on_top_wall(dimensions[1], guard_position[1], distance)
 
-    solution_count = 1
+    the_guard_points = []
+    for i in guard_top_points:
+        for j in guard_side_points:
+            the_guard_points.append([j, i])
 
-    max_x_d = your_x + distance
-    max_y_d = your_y + distance
-    max_y_reflections = math.ceil(max_x_d / room_max_x)
-    max_x_reflections = math.ceil(max_y_d / room_max_y)
+    your_points_reflected_on_x_axis = [[x, -y] for (x, y) in the_points]
+    the_points += your_points_reflected_on_x_axis
+    your_points_refleced_on_y_axis = [[-x, y] for (x, y) in the_points]
+    the_points += your_points_refleced_on_y_axis
 
-    if (your_x != guard_x):
-        solution_count += reflect_on_horizontal_walls(your_x, your_y, guard_x, guard_y, room_max_y, distance)
-    if (your_y != guard_y):
-        solution_count += reflect_on_vertical_walls(your_x, your_y, guard_x, guard_y, room_max_x, distance)
+    guard_points_reflected_on_x_axis = [[x, -y] for (x, y) in the_guard_points]
+    the_guard_points += guard_points_reflected_on_x_axis
+    guard_points_reflected_on_y_axis = [[-x, y] for (x, y) in the_guard_points]
+    the_guard_points += guard_points_reflected_on_y_axis
 
-    # The 4 image locations of the guard reflected on each wall:
-    I1 = [guard_x, reflect_on_room_wall(guard_y, room_max_y)]
-    I2 = [reflect_on_room_wall(guard_x, room_max_x), guard_y]
-    I3 = [guard_x, reflect_on_x_axis(guard_y)]
-    I4 = [reflect_on_y_axis(guard_x), guard_y]
+    solution = set()
+    angles = {}
+    for p in the_points:
+        if (p == your_position): continue
+        angle = math.atan2((your_position[1] - p[1]), (your_position[0] - p[0]))
+        d = math.sqrt((your_position[0] - p[0])**2 + (your_position[1] - p[1])**2)
+        if ((angle in angles and angles[angle] > d) or angle not in angles):
+            angles[angle] = d
 
-    I12 = [I2[0], I1[1]]
-    I23 = [I2[0], I3[1]]
-    I34 = [I4[0], I3[1]]
-    I41 = [I4[0], I1[1]]
+    for p in the_guard_points:
+        angle = math.atan2((your_position[1] - p[1]), (your_position[0] - p[0]))
+        d = math.sqrt((your_position[0] - p[0])**2 + (your_position[1] - p[1])**2)
+        if (d > distance): continue
+        if ((angle in angles and d < angles[angle]) or angle not in angles):
+            angles[angle] = d
+            solution.add(angle)
 
-    a12 = I12[0] - your_x
-    b12 = I12[1] - your_y
-    if (hypotenous(a12, b12) <= distance):
-        solution_count += 1
+    return(len(solution))
 
-    a23 = I23[0] - your_x
-    b23 = abs(I23[1]) + your_y
-    if (hypotenous(a23, b23) <= distance):
-        solution_count += 1
+# takes an x value and mirrors it horizontally
+def mirror_on_side_wall(room_width, x, distance):
+    steps = [2 * (room_width - x), 2 * x]
+    number_of_mirrors = -(distance // -room_width)
+    points = [x]
+    for i in range(0, number_of_mirrors):
+        points.append(points[-1] + steps[i % 2])
 
-    a34 = abs(I34[0]) + your_x
-    b34 = abs(I34[1]) + your_y
-    if (hypotenous(a34, b34) <= distance):
-        solution_count += 1
+    return points
 
-    a41 = abs(I41[0]) + your_x
-    b41 = I41[1] - your_y
-    if (hypotenous(a41, b41) <= distance):
-        solution_count += 1
+# takes a y value and mirrors it vertically
+def mirror_on_top_wall(room_height, y, distance):
+    steps = [2 * (room_height - y), 2 * y]
+    number_of_mirrors = -(distance // -room_height)
+    points = [y]
+    for i in range(0, number_of_mirrors):
+        points.append(points[-1] + steps[i % 2])
 
-    return solution_count
+    return points
 
-def reflect_on_horizontal_walls(your_x, your_y, guard_x, guard_y, room_height, d):
-    b = abs(your_x - guard_x) # always gonna be the same for this chunk
-    solution_count = 0
-    # reflect point on horizontal walls until the hypotenus is greater than the max distance laser can travel
-    pi = guard_y
-    pj = guard_y
-    p1y = 0
-    p2y = 0
 
-    while(True):
-        p1y = reflect_on_x_axis(pi)
-        a1 = bottom_leg(your_y, guard_y, p1y)
-        # gives us the total distance the beam would travel
-        c1 = hypotenous(a1, b)
-        if (c1 < d):
-            solution_count += 1
-
-        p2y = reflect_on_room_wall(pj, room_height)
-        a2 = bottom_leg(your_y, guard_y, p2y)
-        c2 = hypotenous(a2, b)
-        if (c2 < d):
-            solution_count += 1
-        else:
-            break
-
-        pi = p2y
-        pj = p1y
-
-    return solution_count
-
-def reflect_on_vertical_walls(your_x, your_y, guard_x, guard_y, room_width, d):
-    b = abs(your_y - guard_y) # always gonna be the same for this chunk
-    solution_count = 0
-    # reflect point on vertical walls until the hypotenus is greater than the max distance laser can travel
-    pi = guard_x
-    pj = guard_x
-
-    while(True):
-        p1x = reflect_on_y_axis(pi)
-        a1 = bottom_leg(your_x, guard_x, p1x)
-        # gives us the total distance the beam would travel
-        c1 = hypotenous(a1, b)
-        if (c1 < d):
-            solution_count += 1
-
-        p2x = reflect_on_room_wall(pj, room_width)
-        a2 = bottom_leg(your_x, guard_x, p2x)
-        c2 = hypotenous(a1, b)
-        if (c2 < d):
-            solution_count += 1
-        else:
-            break
-
-        pi = p2x
-        pj = p1x
-
-    return solution_count
-
-def bottom_leg(your_x, guard_x, point_x):
-    leg = 0
-    if (point_x > 0):
-        if (guard_x > your_x):
-            leg = point_x - guard_x + (guard_x - your_x)
-        else:
-            leg = point_x - your_x
-    else:
-        if (guard_x < your_x):
-            leg = abs(point_x) + guard_x + (your_x - guard_x)
-        else:
-            leg = abs(point_x) + your_x
-
-    return leg
-
-def reflect_on_y_axis(x):
-    return -x
-
-def reflect_on_x_axis(y):
-    return -y
-
-def reflect_on_room_wall(value, l):
-    if (value < 0):
-        distance_from_wall = abs(value) + l
-    else:
-        distance_from_wall = l - value
-
-    return distance_from_wall + l
-
-def distance_between_points(p, q):
-    return math.sqrt((p[0] - q[0])**2 + (p[1] - q[1])**2)
-
-def hypotenous(a, b):
-    return math.sqrt(a**2 + b**2)
-
-# print(solution([13, 6], [5, 2], [9, 0], 500))
-# print(solution([3,2], [1,1], [2,1], 4))
+print(solution([3,2], [1,1], [2,1], 4))
 print(solution([300,275], [150,150], [185,100], 500))
+
