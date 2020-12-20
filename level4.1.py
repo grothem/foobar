@@ -26,14 +26,14 @@ wall before hitting the elite guard with a total shot distance of sqrt(5).
 import math
 
 def solution(dimensions, your_position, guard_position, distance):
-    # first get all of your positions within the specified distance
+    # calculate all of the possible positions of you and the guard in the first quardrant
     your_side_points = mirror_on_side_wall(dimensions[0], your_position[0], distance)
     your_top_points = mirror_on_top_wall(dimensions[1], your_position[1], distance)
 
-    the_points = []
+    your_points = []
     for i in your_top_points:
         for j in your_side_points:
-            the_points.append([j, i])
+            your_points.append([j, i])
 
     guard_side_points = mirror_on_side_wall(dimensions[0], guard_position[0], distance)
     guard_top_points = mirror_on_top_wall(dimensions[1], guard_position[1], distance)
@@ -43,24 +43,27 @@ def solution(dimensions, your_position, guard_position, distance):
         for j in guard_side_points:
             the_guard_points.append([j, i])
 
-    the_points += reflect_on_x_axis(the_points)
-    the_points += reflect_on_y_axis(the_points)
+    # now reflect those positions across the x and y axis to give us all possible locations of you and the guard
+    your_points += reflect_on_x_axis(your_points)
+    your_points += reflect_on_y_axis(your_points)
 
     the_guard_points += reflect_on_x_axis(the_guard_points)
     the_guard_points += reflect_on_y_axis(the_guard_points)
 
+    # determine what angles result in a shot that hits you
     solution = set()
     angles = {}
-    for p in the_points:
+    for p in your_points:
         if (p == your_position): continue
-        angle = math.atan2((your_position[1] - p[1]), (your_position[0] - p[0]))
-        d = math.sqrt((your_position[0] - p[0])**2 + (your_position[1] - p[1])**2)
+        angle = shot_angle(your_position, p)
+        d = distance_between(your_position, p)
         if ((angle in angles and angles[angle] > d) or angle not in angles):
             angles[angle] = d
 
+    # if there's an existing angle, it's only a valid solution if the guards distance is closer than you
     for p in the_guard_points:
-        angle = math.atan2((your_position[1] - p[1]), (your_position[0] - p[0]))
-        d = math.sqrt((your_position[0] - p[0])**2 + (your_position[1] - p[1])**2)
+        angle = shot_angle(your_position, p)
+        d = distance_between(your_position, p)
         if (d > distance): continue
         if ((angle in angles and d < angles[angle]) or angle not in angles):
             angles[angle] = d
@@ -93,6 +96,12 @@ def reflect_on_x_axis(points):
 
 def reflect_on_y_axis(points):
     return [[-x, y] for (x, y) in points]
+
+def distance_between(p1, p2):
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+def shot_angle(p1, p2):
+    return math.atan2((p1[1] - p2[1]), (p1[0] - p2[0]))
 
 
 print(solution([3,2], [1,1], [2,1], 4))
